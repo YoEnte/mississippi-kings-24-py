@@ -40,44 +40,8 @@ class Logic(IClientHandler):
     def calculate_move(self) -> Move:
         logging.info("Calculate move...")
         possible_moves: List[Move] = self.game_state.possible_moves()
-        newPoss = []
-        test = 0
-        for m in possible_moves[0:round(len(possible_moves) / 1)]:
-            test += 1
-            print(m.actions, abs(m.actions[0].acc))
-            count_acc = 0
-            count_acc_distance = 0
-            count_turn = 0
-            count_turn_coal = 0
-            count_adv = 0
-            count_adv_distance = 0
-            for a in m.actions:
-                if type(a) == Accelerate:
-                    count_acc += 1
-                    count_acc_distance += a.acc
-
-                elif type(a) == Turn:
-                    count_turn += 1
-
-                elif type(a) == Advance:
-                    count_adv += 1
-                    count_adv_distance += a.distance
-            
-            print(count_acc_distance, count_turn, count_adv, count_adv_distance)
-
-            if count_acc_distance < 3 and count_turn < 2 and count_adv < 2 and count_adv_distance >= 2:
-                newPoss.append(m)
-
-        print(test)
-        print(len(possible_moves))
-        print(len(newPoss))
-
-        if len(newPoss) > 0:
-            return newPoss[random.randint(0, len(newPoss) - 1)]
-        else:
-            return possible_moves[random.randint(0, len(possible_moves) - 1)]
-
         
+        return possible_moves[random.randint(0, len(possible_moves) - 1)]
 
     # this method is called every time the server has sent a new game state update
     # this method should be implemented to keep the game state up to date
