@@ -42,6 +42,8 @@ Distanz zum "Ziel"
 Kohle
 Rotations
 Speed
+
+vllt wenn drei von den top 10 feldern discovered sind: abbrechen
 '''
 
 class Logic(IClientHandler):
