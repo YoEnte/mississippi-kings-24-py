@@ -40,6 +40,10 @@ class Logic(IClientHandler):
     def calculate_move(self) -> Move:
         logging.info("Calculate move...")
         possible_moves: List[Move] = self.game_state.possible_moves()
+
+        G = nx.DiGraph()
+
+        print(self.game_state.current_ship.position, self.game_state.current_ship.direction)
         
         return possible_moves[random.randint(0, len(possible_moves) - 1)]
 
