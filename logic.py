@@ -32,6 +32,18 @@ from socha.starter import Starter
 
 import networkx as nx
 
+'''
+Plan:
+Letztes Feld aus dem Mittelstrom rausfinden mit Vektor
+
+Graphen mit allen Nodes bauen ohne edges oder einfach übernehmen ohne edges von letztem zug + wenn neues segment auch die felder
+Dijkstra von Schiff aus, die Edges on the go generieren 
+Distanz zum "Ziel"
+Kohle
+Rotations
+Speed
+'''
+
 class Logic(IClientHandler):
     game_state: GameState
 
