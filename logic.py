@@ -190,7 +190,7 @@ class Logic(IClientHandler):
     # this method is called every time the server is requesting a new move
     # this method should always be implemented otherwise the client will be disqualified
     def calculate_move(self) -> Move:
-        logging.info("Calculate move...")
+        logging.info("\n\n------Calculate move...------")
         #possible_moves: List[Move] = self.game_state.possible_moves()
 
         segments = self.game_state.board.segments
@@ -208,7 +208,7 @@ class Logic(IClientHandler):
             self.dijkstrafy()
 
 
-        #print(self.G.nodes.data('distance'))
+        print(self.G.nodes.data('distance'), "\n\n")
         #print(len(list(self.G.nodes.data('distance'))))
 
 
@@ -257,7 +257,7 @@ class Logic(IClientHandler):
 
             tree.append(localBestDirection)
 
-        print(tree)
+        print(tree, "\n\n")
 
         acceleration = 0
         advancement = 1
@@ -310,7 +310,7 @@ class Logic(IClientHandler):
 
                 v += 1
 
-        print(self.totalAdv, self.totalTurns)
+        #print(self.totalAdv, self.totalTurns)
 
         return Move(actions=actions)
         return possible_moves[random.randint(0, len(possible_moves) - 1)]
