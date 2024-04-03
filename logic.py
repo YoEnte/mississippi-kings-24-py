@@ -208,8 +208,10 @@ class Logic(IClientHandler):
             self.dijkstrafy()
 
 
-        print(self.G.nodes.data('distance'), "\n\n")
+        #print(self.G.nodes.data('distance'), "\n\n")
         #print(len(list(self.G.nodes.data('distance'))))
+        logging.info(self.G.nodes.data('distance'))
+        logging.info("\n\n")
 
 
         # shortest path
@@ -257,7 +259,9 @@ class Logic(IClientHandler):
 
             tree.append(localBestDirection)
 
-        print(tree, "\n\n")
+        #print(tree, "\n\n")
+        logging.info(tree)
+        logging.info("\n\n")
 
         acceleration = 0
         advancement = 1
