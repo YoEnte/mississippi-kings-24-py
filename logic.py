@@ -233,8 +233,8 @@ class Logic(IClientHandler):
             self.dijkstrafy()
 
 
-        print(self.G.nodes.data('distance'))
-        print(len(list(self.G.nodes.data('distance'))))
+        #print(self.G.nodes.data('distance'))
+        #print(len(list(self.G.nodes.data('distance'))))
 
 
         # shortest path
