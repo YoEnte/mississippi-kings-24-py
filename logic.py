@@ -113,17 +113,26 @@ class Logic(IClientHandler):
             for u in range(2):
                 cube = lastCenter.plus(up.vector().times(2 - u))
                 node = ';'.join(str(x) for x in cube.coordinates())
-                self.G.nodes[node]['distance'] = 1-u
+                if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
+                    self.G.nodes[node]['distance'] = 1-u
+                else:
+                    pass
 
             cube = lastCenter
             node = ';'.join(str(x) for x in cube.coordinates())
-            self.G.nodes[node]['distance'] = 0
+            if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
+                self.G.nodes[node]['distance'] = 0
+            else:
+                pass
 
             down = self.game_state.board.next_direction.rotated_by(2)
             for d in range(2):
                 cube = lastCenter.plus(down.vector().times(d+1))
                 node = ';'.join(str(x) for x in cube.coordinates())
-                self.G.nodes[node]['distance'] = d
+                if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
+                    self.G.nodes[node]['distance'] = d
+                else:
+                    pass
 
         # search
         while len(unvisited) > 0:
@@ -199,7 +208,7 @@ class Logic(IClientHandler):
             self.dijkstrafy()
 
 
-        #print(self.G.nodes.data('distance'))
+        print(self.G.nodes.data('distance'))
         #print(len(list(self.G.nodes.data('distance'))))
 
 
