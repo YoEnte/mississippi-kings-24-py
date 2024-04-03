@@ -45,7 +45,7 @@ class Logic(IClientHandler):
         self.lastTimeAcc = 0
         self.totalTurns = 0
         self.totalAdv = 0
-        self.tree = []
+        self.tree: List[CubeDirection] = []
         self.directionVectors = [
             CubeCoordinates(1, 0),  #-1     Right -> Clockwise
             CubeCoordinates(0, 1),  #-1
@@ -116,7 +116,7 @@ class Logic(IClientHandler):
                 cube = lastCenter.plus(up.vector().times(2 - u))
                 node = ';'.join(str(x) for x in cube.coordinates())
                 if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
-                    self.G.nodes[node]['distance'] = 1 - u
+                    self.G.nodes[node]['distance'] = 0
                 else:
                     pass
 
@@ -132,7 +132,7 @@ class Logic(IClientHandler):
                 cube = lastCenter.plus(down.vector().times(d+1))
                 node = ';'.join(str(x) for x in cube.coordinates())
                 if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
-                    self.G.nodes[node]['distance'] = d
+                    self.G.nodes[node]['distance'] = 0
                 else:
                     pass
 
@@ -177,7 +177,7 @@ class Logic(IClientHandler):
                         if self.G.nodes[neighborNode]['stream'] == False:
                             weight += 1
                         else:
-                            weight += 4
+                            weight += 2
 
                         if self.G.nodes[neighborNode]['distance'] > self.G.nodes[smallestNode]['distance'] + weight:
                             #print("relaxed to", self.G.nodes[smallestNode]['distance'] + 1)
@@ -193,10 +193,12 @@ class Logic(IClientHandler):
         # shortest path        
         self.tree = []
         lastCube = self.position
-        tree: List[CubeDirection] = []
         globalbestNode = 999999
 
-        while globalbestNode > 0:
+        whileCount = 0
+
+        while globalbestNode > 0 and whileCount <300:
+            whileCount += 1
             localBestNode = 999999
             d = self.directions.index(self.segmentDirection)
 
@@ -339,6 +341,7 @@ class Logic(IClientHandler):
     # this method should always be implemented otherwise the client will be disqualified
     def calculate_move(self) -> Move:
         logging.info("Calculate move...")
+        logging.info(self.game_state.turn)
         #possible_moves: List[Move] = self.game_state.possible_moves()
         
         self.position = self.game_state.current_ship.position
@@ -364,6 +367,8 @@ class Logic(IClientHandler):
 
         #print(self.G.nodes.data('distance'))
         #print(len(list(self.G.nodes.data('distance'))))
+        logging.info(self.G.nodes.data('distance'))
+        logging.info("\n\n")
 
         self.buildTree()
         logging.info(self.tree)
