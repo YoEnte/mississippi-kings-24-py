@@ -32,40 +32,6 @@ from socha.starter import Starter
 
 import networkx as nx
 
-'''
-Plan:
-Letztes Feld aus dem Mittelstrom rausfinden mit Vektor
-
-Graphen mit allen Nodes bauen ohne edges oder einfach übernehmen ohne edges von letztem zug + wenn neues segment auch die felder
-Dijkstra von Schiff aus, die Edges on the go generieren 
-Distanz zum "Ziel"
-Kohle
-Rotations
-Speed
-
-vllt wenn drei von den top 10 feldern discovered sind: abbrechen
-
-Build Graph:
-Alle neuen Nodes
-Blanko Edges???
-Dann bei jedem durchlauf die gewichte hinzufügen/ändern
-
-und dann wieder die weights clearen?
-
-ODER
-
-keine edges
-die edges immer neu hinzufügen mit weights -> cube coords, ob edges possible sind???
-edges clearen
-
-
-
-
-1. Gewichten von vorne nacht hinten in cols + gewichte für row
-2. floodfill
-
-'''
-
 class Logic(IClientHandler):
     game_state: GameState
 

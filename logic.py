@@ -116,7 +116,7 @@ class Logic(IClientHandler):
                 cube = lastCenter.plus(up.vector().times(2 - u))
                 node = ';'.join(str(x) for x in cube.coordinates())
                 if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
-                    self.G.nodes[node]['distance'] = 1-u
+                    self.G.nodes[node]['distance'] = 1 - u
                 else:
                     pass
 
@@ -188,11 +188,12 @@ class Logic(IClientHandler):
                     continue
     
             #print('----\n')
-                
+      
     def buildTree(self):
         # shortest path        
         self.tree = []
         lastCube = self.position
+        tree: List[CubeDirection] = []
         globalbestNode = 999999
 
         while globalbestNode > 0:
@@ -220,7 +221,6 @@ class Logic(IClientHandler):
             
                 #print(d, localBestNode, globalbestNode, searchDirection)
                 d += 1
-
 
             if localBestNode < globalbestNode:
                 globalbestNode = localBestNode
@@ -366,11 +366,12 @@ class Logic(IClientHandler):
         #print(len(list(self.G.nodes.data('distance'))))
 
         self.buildTree()
-        print(self.tree)
+        logging.info(self.tree)
+        logging.info("\n\n")
 
         move = self.treeToMove()
 
-        self.treeToMoveSpeed(self.position, self.direction, self.game_state.current_ship.speed, self.game_state.current_ship.coal, 0)
+        #self.treeToMoveSpeed(self.position, self.direction, self.game_state.current_ship.speed, self.game_state.current_ship.coal, 0)
 
         return move
         return possible_moves[random.randint(0, len(possible_moves) - 1)]
