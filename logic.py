@@ -322,8 +322,10 @@ class Logic(IClientHandler):
             for i in range(6):
                 if v > 5:
                     v = 0
-                
-                if self.G.nodes[';'.join(str(x) for x in position.plus(self.directionVectors[v]).coordinates())]['field_type'] == FieldType.Water and self.directions[v] != tree[0]:
+
+                my = ';'.join(str(x) for x in position.coordinates())
+                pushother = ';'.join(str(x) for x in self.game_state.other_ship.position.plus(self.directionVectors[v]).coordinates())
+                if self.G.nodes[pushother]['field_type'] == FieldType.Water and my != pushother:
                     actions.append(Push(self.directions[v]))
                     break
 
