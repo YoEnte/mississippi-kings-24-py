@@ -36,6 +36,7 @@ class Logic(IClientHandler):
     game_state: GameState
     graph: nx.DiGraph
     maxSegments: int
+    tree: List[CubeDirection]
     
     def __init__(self):
         
@@ -44,6 +45,7 @@ class Logic(IClientHandler):
         self.lastTimeAcc = 0
         self.totalTurns = 0
         self.totalAdv = 0
+        self.tree = []
         self.directionVectors = [
             CubeCoordinates(1, 0),  #-1     Right -> Clockwise
             CubeCoordinates(0, 1),  #-1
@@ -96,7 +98,7 @@ class Logic(IClientHandler):
 
         #print('--------\n\n')
             
-    def dijkstrafy(self):
+    def setDistances(self):
 
         # reset distances
         for n in self.G.nodes:
@@ -186,49 +188,17 @@ class Logic(IClientHandler):
                     continue
     
             #print('----\n')
-
-    # this method is called every time the server is requesting a new move
-    # this method should always be implemented otherwise the client will be disqualified
-    def calculate_move(self) -> Move:
-        logging.info("\n\n------Calculate move...------")
-        #possible_moves: List[Move] = self.game_state.possible_moves()
-
-        segments = self.game_state.board.segments
-        newSegment = False
-        while self.maxSegments < len(segments):
-            self.maxSegments += 1
-            newSegment = True
-
-            thisSegment = segments[self.maxSegments - 1]
-
-            self.add_nodes(thisSegment)
-
-
-        if newSegment:
-            self.dijkstrafy()
-
-
-        #print(self.G.nodes.data('distance'), "\n\n")
-        #print(len(list(self.G.nodes.data('distance'))))
-        logging.info(self.G.nodes.data('distance'))
-        logging.info("\n\n")
-
-
-        # shortest path
-        position = self.game_state.current_ship.position
-        direction = self.game_state.current_ship.direction
-        playerSegmentIndex = self.game_state.board.segment_with_index_at(position)[0]
-        playerSegment = self.game_state.board.segment_with_index_at(position)[1]
-        segmentDirection = playerSegment.direction
-        nextDirection = self.game_state.board.next_direction
-        
+      
+    def buildTree(self):
+        # shortest path        
+        self.tree = []
+        lastCube = self.position
         tree: List[CubeDirection] = []
-        lastCube = position
         globalbestNode = 999999
 
         while globalbestNode > 0:
             localBestNode = 999999
-            d = self.directions.index(segmentDirection)
+            d = self.directions.index(self.segmentDirection)
 
             for i in range(6):
                 if d > 5:
@@ -252,17 +222,13 @@ class Logic(IClientHandler):
                 #print(d, localBestNode, globalbestNode, searchDirection)
                 d += 1
 
-
             if localBestNode < globalbestNode:
                 globalbestNode = localBestNode
                 lastCube = localBestCube
 
-            tree.append(localBestDirection)
+            self.tree.append(localBestDirection)
 
-        #print(tree, "\n\n")
-        logging.info(tree)
-        logging.info("\n\n")
-
+    def treeToMove(self) -> Move:
         acceleration = 0
         advancement = 1
 
@@ -270,12 +236,12 @@ class Logic(IClientHandler):
             acceleration -= self.lastTimeAcc
             self.lastTimeAcc = 0
 
-        if self.game_state.board.does_field_have_stream(position.plus(tree[0].vector())) == True:
+        if self.game_state.board.does_field_have_stream(self.position.plus(self.tree[0].vector())) == True:
             acceleration += 1
             self.lastTimeAcc += 1
 
         push = False
-        my = ';'.join(str(x) for x in position.plus(tree[0].vector()).coordinates())
+        my = ';'.join(str(x) for x in self.position.plus(self.tree[0].vector()).coordinates())
         other = ';'.join(str(x) for x in self.game_state.other_ship.position.coordinates())
         if my == other:
             acceleration += 1
@@ -287,20 +253,20 @@ class Logic(IClientHandler):
         if acceleration != 0:
             actions.append(Accelerate(acceleration))
 
-        if direction != tree[0]:
-            actions.append(Turn(tree[0]))
+        if self.direction != self.tree[0]:
+            actions.append(Turn(self.tree[0]))
             self.totalTurns += 1
 
         actions.append(Advance(advancement))
         self.totalAdv += 1
 
         if push:
-            v = self.directions.index(segmentDirection.opposite().rotated_by(-1))
+            v = self.directions.index(self.segmentDirection.opposite().rotated_by(-1))
             for i in range(6):
                 if v > 5:
                     v = 0
 
-                my = ';'.join(str(x) for x in position.coordinates())
+                my = ';'.join(str(x) for x in self.position.coordinates())
                 pushother = ';'.join(str(x) for x in self.game_state.other_ship.position.plus(self.directionVectors[v]).coordinates())
                 try:
                     test = self.G.nodes[pushother] # filter out of bounds
@@ -317,6 +283,97 @@ class Logic(IClientHandler):
         #print(self.totalAdv, self.totalTurns)
 
         return Move(actions=actions)
+    
+    def treeToMoveSpeed(self, position: CubeCoordinates, direction: CubeDirection, speed: int, coal: int, steps: int):
+
+        maxSpeedCoal = min(1, coal)
+        maxTurnCoal = min(1, coal)
+        
+        maxSpeed = 4
+        minSpeed = 1
+
+        possibleSpeeds = []
+        for m in range(maxSpeedCoal + 1):
+            if speed - (m + 1) >= minSpeed:
+                possibleSpeeds.append(speed - (m + 1))
+
+        possibleSpeeds.append(speed)
+
+        for p in range(maxSpeedCoal + 1):
+            if speed + (p + 1) <= maxSpeed:
+                possibleSpeeds.append(speed + (p + 1))
+
+        print(speed, possibleSpeeds)
+
+        for s in possibleSpeeds:
+            accelation = Accelerate(s - speed)
+            localCoal = coal - (abs(s - speed) - 1)
+            for i in range(s):
+                
+                # if stream or push:
+                    # x-2
+                # else
+                    # x-1
+                
+                # step+1
+                # position += direction
+                # direction = tree[step]
+
+                # if x > 0:
+                    # go on
+                # elif x == 0:
+                    # recursion
+                # else:
+                    # aua
+                
+                
+                pass
+
+    def hashCube(self, position: CubeCoordinates) -> str:
+        pass
+
+    def unhashCube(self, position: str) -> CubeCoordinates:
+        pass
+
+    # this method is called every time the server is requesting a new move
+    # this method should always be implemented otherwise the client will be disqualified
+    def calculate_move(self) -> Move:
+        logging.info("Calculate move...")
+        #possible_moves: List[Move] = self.game_state.possible_moves()
+        
+        self.position = self.game_state.current_ship.position
+        self.direction = self.game_state.current_ship.direction
+        self.playerSegmentIndex = self.game_state.board.segment_with_index_at(self.position)[0]
+        self.playerSegment = self.game_state.board.segment_with_index_at(self.position)[1]
+        self.segmentDirection = self.playerSegment.direction
+        self.nextDirection = self.game_state.board.next_direction
+
+        segments = self.game_state.board.segments
+        newSegment = False
+        while self.maxSegments < len(segments):
+            self.maxSegments += 1
+            newSegment = True
+
+            thisSegment = segments[self.maxSegments - 1]
+
+            self.add_nodes(thisSegment)
+
+
+        if newSegment:
+            self.setDistances()
+
+        #print(self.G.nodes.data('distance'))
+        #print(len(list(self.G.nodes.data('distance'))))
+
+        self.buildTree()
+        logging.info(self.tree)
+        logging.info("\n\n")
+
+        move = self.treeToMove()
+
+        #self.treeToMoveSpeed(self.position, self.direction, self.game_state.current_ship.speed, self.game_state.current_ship.coal, 0)
+
+        return move
         return possible_moves[random.randint(0, len(possible_moves) - 1)]
 
     # this method is called every time the server has sent a new game state update
