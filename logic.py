@@ -323,6 +323,11 @@ class Logic(IClientHandler):
 
                 my = ';'.join(str(x) for x in position.coordinates())
                 pushother = ';'.join(str(x) for x in self.game_state.other_ship.position.plus(self.directionVectors[v]).coordinates())
+                try:
+                    test = self.G.nodes[pushother] # filter out of bounds
+                except:
+                    continue
+                    v += 1
                 if self.G.nodes[pushother]['field_type'] == FieldType.Water and my != pushother:
                     actions.append(Push(self.directions[v]))
                     break
