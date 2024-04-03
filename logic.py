@@ -1,7 +1,6 @@
 import logging
 import random
 from typing import List
-import time
 
 # not all imports are currently used, but they might be in the future and it shows all available functionalities
 from socha import (
@@ -216,7 +215,6 @@ class Logic(IClientHandler):
     # this method is called every time the server is requesting a new move
     # this method should always be implemented otherwise the client will be disqualified
     def calculate_move(self) -> Move:
-        time.sleep(0.5)
         logging.info("Calculate move...")
         #possible_moves: List[Move] = self.game_state.possible_moves()
 
@@ -340,7 +338,6 @@ class Logic(IClientHandler):
     # this method should be implemented to keep the game state up to date
     def on_update(self, state: GameState):
         self.game_state = state
-        print(self.game_state.last_move)
 
 
 if __name__ == "__main__":
