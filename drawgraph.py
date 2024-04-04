@@ -45,15 +45,6 @@ directionList: List[CubeDirection] = [                 # Right -> Clockwise
     CubeDirection.UpRight
 ]
 
-directionArrows: List[CubeDirection] = [                 # Right -> Clockwise
-    CubeDirection.Right,
-    CubeDirection.DownRight,
-    CubeDirection.DownLeft,
-    CubeDirection.Left,
-    CubeDirection.UpLeft,
-    CubeDirection.UpRight
-]
-
 G = nx.DiGraph()
 G.add_nodes_from()
 
