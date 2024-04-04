@@ -37,6 +37,8 @@ class Logic(IClientHandler):
     graph: nx.DiGraph
     maxSegments: int
     tree: List[CubeDirection]
+    directionVectors: List[CubeCoordinates]
+    directions: List[CubeDirection]
     
     def __init__(self):
         
@@ -46,6 +48,7 @@ class Logic(IClientHandler):
         self.totalTurns = 0
         self.totalAdv = 0
         self.tree: List[CubeDirection] = []
+        self.tree2: List[CubeDirection] = []
         self.directionVectors = [
             CubeCoordinates(1, 0),  #-1     Right -> Clockwise
             CubeCoordinates(0, 1),  #-1
@@ -72,7 +75,7 @@ class Logic(IClientHandler):
                 cube = base.plus(up.vector().times(2 - u))
                 node = ';'.join(str(x) for x in cube.coordinates())
                 stream = self.game_state.board.does_field_have_stream(cube)
-                self.G.add_node(node, field_type=thisSegment.fields[i][u].field_type, stream=stream, segment=self.maxSegments - 1)
+                self.G.add_node(node, field_type=thisSegment.fields[i][u].field_type, stream=stream, segment=self.maxSegments - 1, direction=None)
                 #print(node)
 
 
@@ -80,7 +83,7 @@ class Logic(IClientHandler):
             cube = base
             node = ';'.join(str(x) for x in cube.coordinates())
             stream = self.game_state.board.does_field_have_stream(cube)
-            self.G.add_node(node, field_type=thisSegment.fields[i][2].field_type, stream=stream, segment=self.maxSegments - 1)
+            self.G.add_node(node, field_type=thisSegment.fields[i][2].field_type, stream=stream, segment=self.maxSegments - 1, direction=None)
             #print(node)
 
 
@@ -90,7 +93,7 @@ class Logic(IClientHandler):
                 cube = base.plus(down.vector().times(d+1))
                 node = ';'.join(str(x) for x in cube.coordinates())
                 stream = self.game_state.board.does_field_have_stream(cube)
-                self.G.add_node(node, field_type=thisSegment.fields[i][3 + d].field_type, stream=stream, segment=self.maxSegments - 1)
+                self.G.add_node(node, field_type=thisSegment.fields[i][3 + d].field_type, stream=stream, segment=self.maxSegments - 1, direction=None)
                 #print(node)
 
             base = base.plus(thisSegment.direction.vector())
@@ -102,21 +105,26 @@ class Logic(IClientHandler):
 
         # reset distances
         for n in self.G.nodes:
-            self.G.nodes[n]['distance'] = 9999
+            self.G.nodes[n]['distance'] = 9999999999
+            self.G.nodes[n]['direction'] = None
 
         # set distances
         unvisited = list(self.G.nodes).copy()
 
         # set start            
         lastSegment = self.game_state.board.segments[-1]
-        for n in range(5):
-            lastCenter = lastSegment.center.plus(self.game_state.board.next_direction.vector().times(2))
+        lastCenter = lastSegment.center.plus(self.game_state.board.next_direction.vector().times(2))
+        if self.playerSegmentIndex < 73: # not important
             up = self.game_state.board.next_direction.rotated_by(-2)
             for u in range(2):
                 cube = lastCenter.plus(up.vector().times(2 - u))
                 node = ';'.join(str(x) for x in cube.coordinates())
                 if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
-                    self.G.nodes[node]['distance'] = 0
+                    if self.maxSegments < 8 or u == 1: # if no goal on map or goal on map and field is goal else: goal on map field is no goal and dijkstra magic
+                        self.G.nodes[node]['distance'] = 0
+                        self.G.nodes[node]['direction'] = self.game_state.board.next_direction
+                    else:
+                        pass
                 else:
                     pass
 
@@ -124,6 +132,7 @@ class Logic(IClientHandler):
             node = ';'.join(str(x) for x in cube.coordinates())
             if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
                 self.G.nodes[node]['distance'] = 0
+                self.G.nodes[node]['direction'] = self.game_state.board.next_direction
             else:
                 pass
 
@@ -132,16 +141,24 @@ class Logic(IClientHandler):
                 cube = lastCenter.plus(down.vector().times(d+1))
                 node = ';'.join(str(x) for x in cube.coordinates())
                 if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
-                    self.G.nodes[node]['distance'] = 0
+                    if self.maxSegments < 8 or d == 0:
+                        self.G.nodes[node]['distance'] = 0
+                        self.G.nodes[node]['direction'] = self.game_state.board.next_direction
+                    else:
+                        pass
                 else:
                     pass
 
-        # search
+        else:
+            self.G.nodes['0;0;0']['distance'] = 0
+            self.G.nodes['0;0;0']['direction'] = CubeDirection.Left
+
+        # dijkstra relaxing stuff
         while len(unvisited) > 0:
             #print(unvisited)
             smallestIndex = None
             smallestNode = None
-            smallestDistance = 999999
+            smallestDistance = 999999999999
             for u in range(len(unvisited)):
                 if self.G.nodes[unvisited[u]]['distance'] < smallestDistance:
                     smallestIndex = u
@@ -152,12 +169,10 @@ class Logic(IClientHandler):
 
             unvisited.pop(smallestIndex)
 
-
-
             smallestNodeCoords = smallestNode.split(';')
             smallestNodeCube = CubeCoordinates(int(smallestNodeCoords[0]), int(smallestNodeCoords[1]))
-            for v in self.directionVectors:
-                neighborCube = smallestNodeCube.plus(v)
+            for v in self.directions:
+                neighborCube = smallestNodeCube.plus(v.vector())
                 neighborNode = ';'.join(str(x) for x in neighborCube.coordinates())
 
                 #print(neighborCube)
@@ -173,62 +188,45 @@ class Logic(IClientHandler):
                             #print('land')
                             continue
 
-                        weight = 0
-                        if self.G.nodes[neighborNode]['stream'] == False:
-                            weight += 1
-                        else:
-                            weight += 1
+                        weight = 1
+                        flow = v.opposite()
 
-                        if self.G.nodes[neighborNode]['distance'] > self.G.nodes[smallestNode]['distance'] + weight:
+                        smallestNewWeight = 999999999999
+                        newWeight = (self.G.nodes[smallestNode]['distance'] + 1) * (abs(flow.turn_count_to(self.G.nodes[smallestNode]['direction'])) + 1)
+                        if newWeight < smallestNewWeight:
+                            smallestNewWeight = newWeight
+
+                        if self.G.nodes[neighborNode]['distance'] > self.G.nodes[smallestNode]['distance'] + smallestNewWeight:
                             #print("relaxed to", self.G.nodes[smallestNode]['distance'] + 1)
-                            self.G.nodes[neighborNode]['distance'] = self.G.nodes[smallestNode]['distance'] + weight
+                            self.G.nodes[neighborNode]['distance'] = self.G.nodes[smallestNode]['distance'] + smallestNewWeight
+                            self.G.nodes[neighborNode]['direction'] = flow
+
 
                 except:
                     #print("out of bounds")
                     continue
     
             #print('----\n')
-      
+
     def buildTree(self):
-        # shortest path        
+        
         self.tree = []
         lastCube = self.position
-        globalbestNode = 999999
+        globalbestNode = ';'.join(str(x) for x in self.position.coordinates())
+        globalbestDistance = 999999999999
+        maxloop = 300
+        loop = 0
+        while globalbestDistance > 0 and loop < maxloop:
+            loop+=1
+            nodeDirection = self.G.nodes[';'.join(str(x) for x in lastCube.coordinates())]['direction']
+            lastCube = lastCube.plus(nodeDirection.vector())
+            try:
+                globalbestNode = ';'.join(str(x) for x in lastCube.coordinates())
+                globalbestDistance = self.G.nodes[globalbestNode]['distance']
+                self.tree.append(nodeDirection)
+            except:
+                break
 
-        whileCount = 0
-
-        while globalbestNode > 0 and whileCount <300:
-            whileCount += 1
-            localBestNode = 999999
-            d = self.directions.index(self.segmentDirection)
-
-            for i in range(6):
-                if d > 5:
-                    d = 0
-
-                searchCubeVector = self.directionVectors[d]
-                searchDirection = self.directions[d]
-                nextCube = lastCube.plus(searchCubeVector)
-
-                try:
-                    test = self.G.nodes[';'.join(str(x) for x in nextCube.coordinates())] # filter key error
-                except:
-                    d += 1
-                    continue
-
-                if self.G.nodes[';'.join(str(x) for x in nextCube.coordinates())]['distance'] < localBestNode:
-                    localBestCube = nextCube
-                    localBestDirection = searchDirection
-                    localBestNode = self.G.nodes[';'.join(str(x) for x in nextCube.coordinates())]['distance']
-            
-                #print(d, localBestNode, globalbestNode, searchDirection)
-                d += 1
-
-            if localBestNode < globalbestNode:
-                globalbestNode = localBestNode
-                lastCube = localBestCube
-
-            self.tree.append(localBestDirection)
 
     def treeToMove(self) -> Move:
         acceleration = 0
@@ -363,12 +361,11 @@ class Logic(IClientHandler):
             self.add_nodes(thisSegment)
 
 
-        if newSegment:
-            self.setDistances()
+        self.setDistances()
 
-        #print(self.G.nodes.data('distance'))
-        #print(len(list(self.G.nodes.data('distance'))))
-        logging.info(self.G.nodes.data('distance'))
+        #logging.info(self.G.nodes.data('distance'))
+        logging.info(self.G.nodes.data('direction'))
+        #logging.info(self.G.nodes.data())
         logging.info("\n\n")
 
         self.buildTree()
