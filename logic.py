@@ -75,7 +75,11 @@ class Logic(IClientHandler):
                 cube = base.plus(up.vector().times(2 - u))
                 node = ';'.join(str(x) for x in cube.coordinates())
                 stream = self.game_state.board.does_field_have_stream(cube)
-                self.G.add_node(node, field_type=thisSegment.fields[i][u].field_type, stream=stream, segment=self.maxSegments - 1, direction=None)
+                field_type = thisSegment.fields[i][u].field_type
+                passengerDirection = None
+                if field_type == FieldType.Passenger:
+                    passengerDirection = thisSegment.fields[i][u].passenger.direction
+                self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, stream=stream, segment=self.maxSegments - 1, direction=None)
                 #print(node)
 
 
@@ -83,7 +87,11 @@ class Logic(IClientHandler):
             cube = base
             node = ';'.join(str(x) for x in cube.coordinates())
             stream = self.game_state.board.does_field_have_stream(cube)
-            self.G.add_node(node, field_type=thisSegment.fields[i][2].field_type, stream=stream, segment=self.maxSegments - 1, direction=None)
+            field_type = thisSegment.fields[i][2].field_type
+            passengerDirection = None
+            if field_type == FieldType.Passenger:
+                passengerDirection = thisSegment.fields[i][2].passenger.direction
+            self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, stream=stream, segment=self.maxSegments - 1, direction=None)
             #print(node)
 
 
@@ -93,7 +101,11 @@ class Logic(IClientHandler):
                 cube = base.plus(down.vector().times(d+1))
                 node = ';'.join(str(x) for x in cube.coordinates())
                 stream = self.game_state.board.does_field_have_stream(cube)
-                self.G.add_node(node, field_type=thisSegment.fields[i][3 + d].field_type, stream=stream, segment=self.maxSegments - 1, direction=None)
+                field_type = thisSegment.fields[i][3 + d].field_type
+                passengerDirection = None
+                if field_type == FieldType.Passenger:
+                    passengerDirection = thisSegment.fields[i][3 + d].passenger.direction
+                self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, stream=stream, segment=self.maxSegments - 1, direction=None)
                 #print(node)
 
             base = base.plus(thisSegment.direction.vector())
@@ -191,14 +203,11 @@ class Logic(IClientHandler):
                         weight = 1
                         flow = v.opposite()
 
-                        smallestNewWeight = 999999999999
                         newWeight = (self.G.nodes[smallestNode]['distance'] + 1) * (abs(flow.turn_count_to(self.G.nodes[smallestNode]['direction'])) + 1)
-                        if newWeight < smallestNewWeight:
-                            smallestNewWeight = newWeight
 
-                        if self.G.nodes[neighborNode]['distance'] > self.G.nodes[smallestNode]['distance'] + smallestNewWeight:
+                        if self.G.nodes[neighborNode]['distance'] > newWeight:
                             #print("relaxed to", self.G.nodes[smallestNode]['distance'] + 1)
-                            self.G.nodes[neighborNode]['distance'] = self.G.nodes[smallestNode]['distance'] + smallestNewWeight
+                            self.G.nodes[neighborNode]['distance'] = newWeight
                             self.G.nodes[neighborNode]['direction'] = flow
 
 
@@ -364,8 +373,8 @@ class Logic(IClientHandler):
         self.setDistances()
 
         #logging.info(self.G.nodes.data('distance'))
-        logging.info(self.G.nodes.data('direction'))
-        #logging.info(self.G.nodes.data())
+        #logging.info(self.G.nodes.data('direction'))
+        logging.info(self.G.nodes.data())
         logging.info("\n\n")
 
         self.buildTree()
