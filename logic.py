@@ -177,7 +177,7 @@ class Logic(IClientHandler):
                         if self.G.nodes[neighborNode]['stream'] == False:
                             weight += 1
                         else:
-                            weight += 2
+                            weight += 1
 
                         if self.G.nodes[neighborNode]['distance'] > self.G.nodes[smallestNode]['distance'] + weight:
                             #print("relaxed to", self.G.nodes[smallestNode]['distance'] + 1)
@@ -254,7 +254,7 @@ class Logic(IClientHandler):
 
         if acceleration != 0:
             actions.append(Accelerate(acceleration))
-
+####HELPHELPHELP BUGGYY???
         if self.direction != self.tree[0]:
             actions.append(Turn(self.tree[0]))
             self.totalTurns += 1
@@ -262,6 +262,7 @@ class Logic(IClientHandler):
         actions.append(Advance(advancement))
         self.totalAdv += 1
 
+# push to highest weight field lol
         if push:
             v = self.directions.index(self.segmentDirection.opposite().rotated_by(-1))
             for i in range(6):
