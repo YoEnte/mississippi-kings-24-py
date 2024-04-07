@@ -384,7 +384,8 @@ class Logic(IClientHandler):
 
         #logging.info(self.G.nodes.data('distance'))
         #logging.info(self.G.nodes.data('direction'))
-        logging.info(str(self.G.nodes.data()).replace('::', '.'))
+        graphstr = str(self.G.nodes.data()).replace('::', '.')
+        logging.info(graphstr)
         logging.info("\n\n")
 
         self.buildTree()
