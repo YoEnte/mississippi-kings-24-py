@@ -246,7 +246,6 @@ class Logic(IClientHandler):
             except:
                 break
 
-
     def treeToMove(self) -> Move:
         acceleration = 0
         advancement = 1
@@ -281,24 +280,21 @@ class Logic(IClientHandler):
 
 # push to highest weight field lol
         if push:
-            v = self.directions.index(self.segmentDirection.opposite().rotated_by(-1))
-            for i in range(6):
-                if v > 5:
-                    v = 0
+            worstDistance = -1 # higest weight => push enemy to that field
+            worstDirection = None
+            for v in range(6):
 
                 my = ';'.join(str(x) for x in self.position.coordinates())
                 pushother = ';'.join(str(x) for x in self.game_state.other_ship.position.plus(self.directionVectors[v]).coordinates())
                 try:
-                    test = self.G.nodes[pushother] # filter out of bounds
+                    if self.G.nodes[pushother]['field_type'] == FieldType.Water and my != pushother:
+                        if self.G.nodes[pushother]['distance'] > worstDistance:
+                            worstDistance = self.G.nodes[pushother]['distance']
+                            worstDirection = self.directions[v]
                 except:
-                    v += 1
-                    continue
+                    pass
 
-                if self.G.nodes[pushother]['field_type'] == FieldType.Water and my != pushother:
-                    actions.append(Push(self.directions[v]))
-                    break
-
-                v += 1
+            actions.append(Push(worstDirection))
 
         #print(self.totalAdv, self.totalTurns)
 
