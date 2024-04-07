@@ -45,10 +45,6 @@ directionList: List[CubeDirection] = [                 # Right -> Clockwise
     CubeDirection.UpRight
 ]
 
-G = nx.DiGraph()
-G.add_nodes_from([])
-
-
 def draw(G: nx.DiGraph):
 
     colors = []
@@ -63,22 +59,12 @@ def draw(G: nx.DiGraph):
         cube = CubeCoordinates(int(coords3[0]), int(coords3[1]))
 
         if G.nodes[n]['field_type'] == FieldType.Water:
-            passenger = False
-            for v in directionList:
-                v_n = ';'.join(str(x) for x in cube.plus(v.vector()).coordinates())
-                try:
-                    if G.nodes[v_n]['field_type'] == FieldType.Passenger and G.nodes[v_n]['passengerDirection'] == v.opposite():
-                        colors.append(["pink"])
-                        passenger = True
-                        break
-                except:
-                    pass
-            
-            if not passenger:
-                if not G.nodes[n]['stream']:
-                    colors.append(["blue"])
-                else:
-                    colors.append(["turquoise"])
+            if G.nodes[n]['dock']:
+                colors.append(['pink'])
+            elif not G.nodes[n]['stream']:
+                colors.append(["blue"])
+            else:
+                colors.append(["turquoise"])
             
         elif G.nodes[n]['field_type'] == FieldType.Goal:
             colors.append(["gold"])
@@ -127,3 +113,9 @@ def draw(G: nx.DiGraph):
 
     plt.gca().invert_yaxis()
     plt.show()
+
+
+G = nx.DiGraph()
+G.add_nodes_from([('-1;-2;3', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.Right, 'dock': False, 'distance': 12}), ('-1;-1;2', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.Right, 'dock': False, 'distance': 10}), ('-1;0;1', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': True, 'segment': 0, 'direction': CubeDirection.Right, 'dock': False, 'distance': 8}), ('-2;1;1', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.Right, 'dock': False, 'distance': 7}), ('-3;2;1', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.UpRight, 'dock': False, 'distance': 16}), ('0;-2;2', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.Right, 'dock': False, 'distance': 11}), ('0;-1;1', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.Right, 'dock': False, 'distance': 9}), ('0;0;0', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': True, 'segment': 0, 'direction': CubeDirection.Right, 'dock': False, 'distance': 7}), ('-1;1;0', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.Right, 'dock': False, 'distance': 6}), ('-2;2;0', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.UpRight, 'dock': False, 'distance': 14}), ('1;-2;1', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.Right, 'dock': False, 'distance': 10}), ('1;-1;0', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.Right, 'dock': False, 'distance': 8}), ('1;0;-1', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': True, 'segment': 0, 'direction': CubeDirection.Right, 'dock': False, 'distance': 6}), ('0;1;-1', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.Right, 'dock': False, 'distance': 5}), ('-1;2;-1', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.UpRight, 'dock': False, 'distance': 12}), ('2;-2;0', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 4}), ('2;-1;-1', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 3}), ('2;0;-2', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': True, 'segment': 0, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 2}), ('1;1;-2', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.Right, 'dock': False, 'distance': 4}), ('0;2;-2', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 0, 'direction': CubeDirection.UpRight, 'dock': False, 'distance': 10}), ('3;-2;-1', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': CubeDirection.DownLeft, 'dock': False, 'distance': 8}), ('3;-1;-2', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': CubeDirection.DownLeft, 'dock': False, 'distance': 6}), ('3;0;-3', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': True, 'segment': 1, 'direction': CubeDirection.Right, 'dock': False, 'distance': 2}), ('2;1;-3', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 1}), ('1;2;-3', {'field_type': FieldType.Island, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': None, 'dock': False, 'distance': 9999999999}), ('4;-2;-2', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 5}), ('4;-1;-3', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 4}), ('4;0;-4', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': True, 'segment': 1, 'direction': CubeDirection.Right, 'dock': False, 'distance': 1}), ('3;1;-4', {'field_type': FieldType.Island, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': None, 'dock': False, 'distance': 9999999999}), ('2;2;-4', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 0}), ('5;-2;-3', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': CubeDirection.Right, 'dock': False, 'distance': 6}), ('5;-1;-4', {'field_type': FieldType.Passenger, 'passengerDirection': CubeDirection.DownRight, 'stream': False, 'segment': 1, 'direction': None, 'dock': False, 'distance': 9999999999}), ('5;0;-5', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': CubeDirection.Right, 'dock': True, 'distance': 0}), ('4;1;-5', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': True, 'segment': 1, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 1}), ('3;2;-5', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 0}), ('6;-2;-4', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 2}), ('6;-1;-5', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 1}), ('6;0;-6', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 0}), ('5;1;-6', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': False, 'segment': 1, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 0}), ('4;2;-6', {'field_type': FieldType.Water, 'passengerDirection': None, 'stream': True, 'segment': 1, 'direction': CubeDirection.DownRight, 'dock': False, 'distance': 0})])
+
+draw(G)

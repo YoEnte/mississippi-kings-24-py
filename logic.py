@@ -111,6 +111,18 @@ class Logic(IClientHandler):
             base = base.plus(thisSegment.direction.vector())
             #print()
 
+            for n in self.G.nodes:
+                cube = CubeCoordinates(int(n.split(';')[0]), int(n.split(';')[1]))
+                self.G.nodes[n]['dock'] = False
+                for v in self.directions:
+                    v_n = ';'.join(str(x) for x in cube.plus(v.vector()).coordinates())
+                    try:
+                        if self.G.nodes[v_n]['field_type'] == FieldType.Passenger and self.G.nodes[v_n]['passengerDirection'] == v.opposite():
+                            self.G.nodes[n]['dock'] = True
+                            break
+                    except:
+                        pass
+
         #print('--------\n\n')
             
     def setDistances(self):
@@ -126,44 +138,39 @@ class Logic(IClientHandler):
         # set start            
         lastSegment = self.game_state.board.segments[-1]
         lastCenter = lastSegment.center.plus(self.game_state.board.next_direction.vector().times(2))
-        if self.playerSegmentIndex < 73: # not important
-            up = self.game_state.board.next_direction.rotated_by(-2)
-            for u in range(2):
-                cube = lastCenter.plus(up.vector().times(2 - u))
-                node = ';'.join(str(x) for x in cube.coordinates())
-                if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
-                    if self.maxSegments < 8 or u == 1: # if no goal on map or goal on map and field is goal else: goal on map field is no goal and dijkstra magic
-                        self.G.nodes[node]['distance'] = 0
-                        self.G.nodes[node]['direction'] = self.game_state.board.next_direction
-                    else:
-                        pass
-                else:
-                    pass
-
-            cube = lastCenter
+        up = self.game_state.board.next_direction.rotated_by(-2)
+        for u in range(2):
+            cube = lastCenter.plus(up.vector().times(2 - u))
             node = ';'.join(str(x) for x in cube.coordinates())
             if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
-                self.G.nodes[node]['distance'] = 0
-                self.G.nodes[node]['direction'] = self.game_state.board.next_direction
+                if self.maxSegments < 8 or u == 1: # if no goal on map or goal on map and field is goal else: goal on map field is no goal and dijkstra magic
+                    self.G.nodes[node]['distance'] = 0
+                    self.G.nodes[node]['direction'] = self.game_state.board.next_direction
+                else:
+                    pass
             else:
                 pass
 
-            down = self.game_state.board.next_direction.rotated_by(2)
-            for d in range(2):
-                cube = lastCenter.plus(down.vector().times(d+1))
-                node = ';'.join(str(x) for x in cube.coordinates())
-                if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
-                    if self.maxSegments < 8 or d == 0:
-                        self.G.nodes[node]['distance'] = 0
-                        self.G.nodes[node]['direction'] = self.game_state.board.next_direction
-                    else:
-                        pass
+        cube = lastCenter
+        node = ';'.join(str(x) for x in cube.coordinates())
+        if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
+            self.G.nodes[node]['distance'] = 0
+            self.G.nodes[node]['direction'] = self.game_state.board.next_direction
+        else:
+            pass
+
+        down = self.game_state.board.next_direction.rotated_by(2)
+        for d in range(2):
+            cube = lastCenter.plus(down.vector().times(d+1))
+            node = ';'.join(str(x) for x in cube.coordinates())
+            if self.G.nodes[node]['field_type'] == FieldType.Water or self.G.nodes[node]['field_type'] == FieldType.Goal:
+                if self.maxSegments < 8 or d == 0:
+                    self.G.nodes[node]['distance'] = 0
+                    self.G.nodes[node]['direction'] = self.game_state.board.next_direction
                 else:
                     pass
-
-        else:
-            self.G.nodes['0;0;0']['distance'] = 0
-            self.G.nodes['0;0;0']['direction'] = CubeDirection.Left
+            else:
+                pass
 
         # dijkstra relaxing stuff
         while len(unvisited) > 0:
@@ -216,6 +223,9 @@ class Logic(IClientHandler):
                     continue
     
             #print('----\n')
+
+    def updatePassAndDocks(self):
+        pass
 
     def buildTree(self):
         
@@ -374,7 +384,7 @@ class Logic(IClientHandler):
 
         #logging.info(self.G.nodes.data('distance'))
         #logging.info(self.G.nodes.data('direction'))
-        logging.info(self.G.nodes.data())
+        logging.info(str(self.G.nodes.data()).replace('::', '.'))
         logging.info("\n\n")
 
         self.buildTree()
