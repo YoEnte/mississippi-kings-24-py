@@ -32,6 +32,13 @@ from socha.starter import Starter
 
 import networkx as nx
 
+#############
+## TO DO
+## Choose between goal and idle mode (at end)
+## Idle => drive in circle
+## Speedy Moves
+## First Speedy then passengers?
+
 class Logic(IClientHandler):
     game_state: GameState
     graph: nx.DiGraph
