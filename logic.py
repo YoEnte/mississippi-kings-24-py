@@ -46,6 +46,7 @@ class Logic(IClientHandler):
     tree: List[CubeDirection]
     directionVectors: List[CubeCoordinates]
     directions: List[CubeDirection]
+    passengerNodes = List[List] # str, CubeCoordinates, bool
     
     def __init__(self):
         
@@ -55,7 +56,8 @@ class Logic(IClientHandler):
         self.totalTurns = 0
         self.totalAdv = 0
         self.tree: List[CubeDirection] = []
-        self.tree2: List[CubeDirection] = []
+        self.idle = False
+        self.passengerNodes = []
         self.directionVectors = [
             CubeCoordinates(1, 0),  #-1     Right -> Clockwise
             CubeCoordinates(0, 1),  #-1
@@ -86,7 +88,8 @@ class Logic(IClientHandler):
                 passengerDirection = None
                 if field_type == FieldType.Passenger:
                     passengerDirection = thisSegment.fields[i][u].passenger.direction
-                self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, stream=stream, segment=self.maxSegments - 1, direction=None)
+                    self.passengerNodes.append([node, cube, True])
+                self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, speed=None, stream=stream, segment=self.maxSegments - 1, direction=None)
                 #print(node)
 
 
@@ -98,7 +101,8 @@ class Logic(IClientHandler):
             passengerDirection = None
             if field_type == FieldType.Passenger:
                 passengerDirection = thisSegment.fields[i][2].passenger.direction
-            self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, stream=stream, segment=self.maxSegments - 1, direction=None)
+                self.passengerNodes.append([node, cube, True])
+            self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, speed=None, stream=stream, segment=self.maxSegments - 1, direction=None)
             #print(node)
 
 
@@ -112,7 +116,8 @@ class Logic(IClientHandler):
                 passengerDirection = None
                 if field_type == FieldType.Passenger:
                     passengerDirection = thisSegment.fields[i][3 + d].passenger.direction
-                self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, stream=stream, segment=self.maxSegments - 1, direction=None)
+                    self.passengerNodes.append([node, cube, True])
+                self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, speed=None, stream=stream, segment=self.maxSegments - 1, direction=None)
                 #print(node)
 
             base = base.plus(thisSegment.direction.vector())
@@ -126,13 +131,23 @@ class Logic(IClientHandler):
                     try:
                         if self.G.nodes[v_n]['field_type'] == FieldType.Passenger and self.G.nodes[v_n]['passengerDirection'] == v.opposite():
                             self.G.nodes[n]['dock'] = True
+
                             break
                     except:
                         pass
 
+                if self.G.nodes[n]['dock'] == True or self.G.nodes[n]['field_type'] == FieldType.Goal:
+                    speed = 1
+                    if self.G.nodes[n]['stream'] == True:
+                        speed += 1
+                    self.G.nodes[n]['speed'] = speed
+
         #print('--------\n\n')
             
     def setDistances(self):
+        
+        if self.playerSegmentIndex == 7 and self.game_state.current_ship.passengers < 2 and self.idle == False:
+            self.idle = True
 
         # reset distances
         for n in self.G.nodes:
@@ -142,7 +157,12 @@ class Logic(IClientHandler):
         # set distances
         unvisited = list(self.G.nodes).copy()
 
-        # set start            
+        # set start
+        if self.idle == False:
+            print('goal')
+        else:
+            print('idle')
+
         lastSegment = self.game_state.board.segments[-1]
         lastCenter = lastSegment.center.plus(self.game_state.board.next_direction.vector().times(2))
         up = self.game_state.board.next_direction.rotated_by(-2)
@@ -214,10 +234,15 @@ class Logic(IClientHandler):
                             #print('land')
                             continue
 
-                        weight = 1
                         flow = v.opposite()
 
-                        newWeight = (self.G.nodes[smallestNode]['distance'] + 1) * (abs(flow.turn_count_to(self.G.nodes[smallestNode]['direction'])) + 1)
+                        dockMulti = 1
+                        if self.game_state.current_ship.passengers < 2: # if need for passengers
+                            print("\n\nneed\n\n")
+                            if self.G.nodes[neighborNode]['dock'] == True:
+                                dockMulti = 0.5
+
+                        newWeight = round((self.G.nodes[smallestNode]['distance'] + 1) * (abs(flow.turn_count_to(self.G.nodes[smallestNode]['direction'])) + 1) * dockMulti)
 
                         if self.G.nodes[neighborNode]['distance'] > newWeight:
                             #print("relaxed to", self.G.nodes[smallestNode]['distance'] + 1)
@@ -232,7 +257,18 @@ class Logic(IClientHandler):
             #print('----\n')
 
     def updatePassAndDocks(self):
-        pass
+        
+        for p in self.passengerNodes:
+            if p[2] == False:
+                continue
+
+            if self.game_state.board.get(p[1]).passenger.passenger == 0:
+                dock = p[1].plus(self.G.nodes[p[0]]['passengerDirection'].vector())
+                dockNode = ';'.join(str(x) for x in dock.coordinates())
+                self.G.nodes[dockNode]['dock'] = False
+                self.G.nodes[p[0]]['passengerDirection'] = None
+                p[2] = False
+
 
     def buildTree(self):
         
@@ -361,6 +397,7 @@ class Logic(IClientHandler):
     # this method is called every time the server is requesting a new move
     # this method should always be implemented otherwise the client will be disqualified
     def calculate_move(self) -> Move:
+        logging.info("\n\n\n\n")
         logging.info("Calculate move...")
         logging.info(self.game_state.turn)
         #possible_moves: List[Move] = self.game_state.possible_moves()
@@ -382,6 +419,7 @@ class Logic(IClientHandler):
 
             self.add_nodes(thisSegment)
 
+        self.updatePassAndDocks()
 
         self.setDistances()
 
@@ -389,11 +427,11 @@ class Logic(IClientHandler):
         #logging.info(self.G.nodes.data('direction'))
         graphstr = str(self.G.nodes.data()).replace('::', '.')
         logging.info(graphstr)
-        logging.info("\n\n")
+        logging.info("")
 
         self.buildTree()
         logging.info(self.tree)
-        logging.info("\n\n")
+        logging.info("")
 
         move = self.treeToMove()
 
