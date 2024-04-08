@@ -145,9 +145,6 @@ class Logic(IClientHandler):
         #print('--------\n\n')
             
     def setDistances(self):
-        
-        if self.playerSegmentIndex == 7 and self.game_state.current_ship.passengers < 2 and self.idle == False:
-            self.idle = True
 
         # reset distances
         for n in self.G.nodes:
@@ -158,11 +155,6 @@ class Logic(IClientHandler):
         unvisited = list(self.G.nodes).copy()
 
         # set start
-        if self.idle == False:
-            print('goal')
-        else:
-            print('idle')
-
         lastSegment = self.game_state.board.segments[-1]
         lastCenter = lastSegment.center.plus(self.game_state.board.next_direction.vector().times(2))
         up = self.game_state.board.next_direction.rotated_by(-2)
@@ -418,21 +410,51 @@ class Logic(IClientHandler):
 
             self.add_nodes(thisSegment)
 
+        
+        if self.playerSegmentIndex == 7 and self.game_state.current_ship.passengers < 2 and self.idle == False:
+            self.idle = True
+        
+        if self.idle == False:
+            print('goal')
+        else:
+            print('idle')
+        print(self.game_state.current_ship.passengers)
+
         self.updatePassAndDocks()
 
-        self.setDistances()
+        if (self.idle == False):
+            self.setDistances()
 
-        #logging.info(self.G.nodes.data('distance'))
-        #logging.info(self.G.nodes.data('direction'))
-        graphstr = str(self.G.nodes.data()).replace('::', '.')
-        logging.info(graphstr)
-        logging.info("")
+            #logging.info(self.G.nodes.data('distance'))
+            #logging.info(self.G.nodes.data('direction'))
+            graphstr = str(self.G.nodes.data()).replace('::', '.')
+            logging.info(graphstr)
+            logging.info("")
 
-        self.buildTree()
-        logging.info(self.tree)
-        logging.info("")
+            self.buildTree()
+            logging.info(self.tree)
+            logging.info("")
 
-        move = self.treeToMove()
+            move = self.treeToMove()
+        else:
+
+            ## ToDo
+            ## Das funktioniert hier an sich, ist aber nicht wirklich reliable
+            ## fährt in die falsche richtung und so
+            ## plan:
+            ## possible turns (turn distance < 2)
+            ## perform action
+            ## advance(1)
+            ## perform action
+            ## recursively
+            ## depth == 10 or so
+            ## stay on segment 8
+            ## generate tree (as known) -> movetotree()
+
+            moves = self.game_state.possible_action_comb(self.game_state, [], 0, 2)
+            print(moves)
+            move = Move(moves[0])
+
 
         #self.treeToMoveSpeed(self.position, self.direction, self.game_state.current_ship.speed, self.game_state.current_ship.coal, 0)
 
