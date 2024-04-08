@@ -238,7 +238,6 @@ class Logic(IClientHandler):
 
                         dockMulti = 1
                         if self.game_state.current_ship.passengers < 2: # if need for passengers
-                            print("\n\nneed\n\n")
                             if self.G.nodes[neighborNode]['dock'] == True:
                                 dockMulti = 0.5
 
