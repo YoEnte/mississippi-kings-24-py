@@ -61,7 +61,7 @@ def draw(G: nx.DiGraph):
             elif not G.nodes[n]['stream']:
                 colors.append(["blue"])
             else:
-                colors.append(["turquoise"])
+                colors.append(["lightseagreen"])
             
         elif G.nodes[n]['field_type'] == FieldType.Goal:
             colors.append(["gold"])
@@ -84,7 +84,7 @@ def draw(G: nx.DiGraph):
         nodeData= n[1]
         
         color = c[0]
-        alpha = 0.2
+        alpha = 0.3
         if nodeData['segment'] % 2 == 1:
             alpha += 0.2
         hex = RegularPolygon((x, y), numVertices=6, radius=2. / 3., 
@@ -93,7 +93,7 @@ def draw(G: nx.DiGraph):
         ax.add_patch(hex)
         
         if nodeData['direction'] != None: # direction
-            ax.text(x, y, '---->', ha='center', va='center', size=12, rotation = (6 - directionList.index(nodeData['direction'])) * 60, color='indigo')
+            ax.text(x, y, '--->', ha='center', va='center', size=12, rotation = (6 - directionList.index(nodeData['direction'])) * 60, color='indigo')
 
         ax.text(x, y-0.3, node, ha='center', va='center', size=7) # coord
 
@@ -101,10 +101,10 @@ def draw(G: nx.DiGraph):
         if d >= 9999999999:
             d = 'inf'
         
-        ax.text(x, y+0.1, d, ha='center', va='center', size=7) # distance
+        ax.text(x, y+0.1, d, ha='center', va='center', size=9) # distance
 
         if nodeData['speed'] != None:
-            ax.text(x, y+0.5, nodeData['speed'], ha='center', va='center', size=7) # speed
+            ax.text(x, y+0.5, nodeData['speed'], ha='center', va='center', size=8) # speed
 
     # Also add scatter points in hexagon centres
     ax.scatter(hcoord, vcoord, c=[c[0] for c in colors], alpha=0.5)
