@@ -260,7 +260,6 @@ class Logic(IClientHandler):
                 self.G.nodes[p[0]]['passengerDirection'] = None
                 p[2] = False
 
-
     def buildTree(self):
         
         self.tree = []
@@ -334,50 +333,39 @@ class Logic(IClientHandler):
 
         return Move(actions=actions)
     
-    def treeToMoveSpeed(self, position: CubeCoordinates, direction: CubeDirection, speed: int, coal: int, steps: int):
-
-        maxSpeedCoal = min(1, coal)
-        maxTurnCoal = min(1, coal)
-        
-        maxSpeed = 4
+    def treeToMoveSpeed(self, position: CubeCoordinates, direction: CubeDirection, speed: int, coal: int, maxCoal: int):
+    
         minSpeed = 1
-
-        possibleSpeeds = []
-        for m in range(maxSpeedCoal + 1):
-            if speed - (m + 1) >= minSpeed:
-                possibleSpeeds.append(speed - (m + 1))
-
-        possibleSpeeds.append(speed)
-
-        for p in range(maxSpeedCoal + 1):
-            if speed + (p + 1) <= maxSpeed:
-                possibleSpeeds.append(speed + (p + 1))
-
-        print(speed, possibleSpeeds)
-
-        for s in possibleSpeeds:
-            accelation = Accelerate(s - speed)
-            localCoal = coal - (abs(s - speed) - 1)
-            for i in range(s):
+        maxSpeed = 4
+        
+        maxCoal = min(maxCoal, coal)
+        
+        possibleSpeeds = [speed]
+        
+        for c in range(maxCoal + 1):
+            
+            newHigh = speed + (c + 1)
+            if newHigh <= maxSpeed:
+                possibleSpeeds.append(newHigh)
                 
-                # if stream or push:
-                    # x-2
-                # else
-                    # x-1
-                
-                # step+1
-                # position += direction
-                # direction = tree[step]
-
-                # if x > 0:
-                    # go on
-                # elif x == 0:
-                    # recursion
-                # else:
-                    # aua
-                
+            newLow = speed - (c + 1)
+            if newLow >= minSpeed:
+                possibleSpeeds.append(newLow)
+        
+        # for each of the speeds
+        for p in possibleSpeeds:
+            print(p)
+            turns = 0
+            
+            # for each step in speed
+            for s in range(p):
+                # check if stream or push
+                # (check if) turn
+                # 
                 
                 pass
+
+                
 
     def hashCube(self, position: CubeCoordinates) -> str:
         pass
@@ -418,17 +406,17 @@ class Logic(IClientHandler):
             print('goal')
         else:
             print('idle')
-        print(self.game_state.current_ship.passengers)
+        print(self.game_state.current_ship.passengers, 'passengers')
 
         self.updatePassAndDocks()
 
-        if (self.idle == False):
+        if (self.idle == False or True):
             self.setDistances()
 
             #logging.info(self.G.nodes.data('distance'))
             #logging.info(self.G.nodes.data('direction'))
             graphstr = str(self.G.nodes.data()).replace('::', '.')
-            logging.info(graphstr)
+            #logging.info(graphstr)
             logging.info("")
 
             self.buildTree()
@@ -436,6 +424,12 @@ class Logic(IClientHandler):
             logging.info("")
 
             move = self.treeToMove()
+            
+            
+            move2 = self.treeToMoveSpeed(self.position, self.direction,
+                                         self.game_state.current_ship.speed,
+                                         self.game_state.current_ship.coal,
+                                         1)
         else:
 
             ## ToDo
