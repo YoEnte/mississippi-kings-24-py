@@ -31,6 +31,7 @@ from socha.api.networking.game_client import IClientHandler
 from socha.starter import Starter
 
 import networkx as nx
+import math
 
 #############
 ## TO DO
@@ -46,7 +47,7 @@ class Logic(IClientHandler):
     tree: List[CubeDirection]
     directionVectors: List[CubeCoordinates]
     directions: List[CubeDirection]
-    passengerNodes = List[List] # str, CubeCoordinates, bool
+    passengerNodes: List[List] # str, CubeCoordinates, bool
     
     def __init__(self):
         
@@ -231,9 +232,12 @@ class Logic(IClientHandler):
                         dockMulti = 1
                         if self.game_state.current_ship.passengers < 2: # if need for passengers
                             if self.G.nodes[neighborNode]['dock'] == True:
-                                dockMulti = 0.5
+                                dockMulti = 0.45
 
-                        newWeight = round((self.G.nodes[smallestNode]['distance'] + 1) * (abs(flow.turn_count_to(self.G.nodes[smallestNode]['direction'])) + 1) * dockMulti)
+                        newWeight = math.floor((self.G.nodes[smallestNode]['distance'] + 1) * (abs(flow.turn_count_to(self.G.nodes[smallestNode]['direction'])) + 1) * dockMulti)
+
+                        if newWeight < 1:
+                            newWeight = 1
 
                         if self.G.nodes[neighborNode]['distance'] > newWeight:
                             #print("relaxed to", self.G.nodes[smallestNode]['distance'] + 1)
@@ -365,8 +369,6 @@ class Logic(IClientHandler):
                 
                 pass
 
-                
-
     def hashCube(self, position: CubeCoordinates) -> str:
         pass
 
@@ -399,13 +401,17 @@ class Logic(IClientHandler):
             self.add_nodes(thisSegment)
 
         
-        if self.playerSegmentIndex == 7 and self.game_state.current_ship.passengers < 2 and self.idle == False:
+        #if self.playerSegmentIndex == 7 and self.game_state.current_ship.passengers < 2 and self.idle == False:
+        #    self.idle = True
+
+        if self.maxSegments == 8 and len(self.tree) <= 4 and self.idle == False:
             self.idle = True
-        
+
         if self.idle == False:
             print('goal')
         else:
             print('idle')
+
         print(self.game_state.current_ship.passengers, 'passengers')
 
         self.updatePassAndDocks()
@@ -416,20 +422,14 @@ class Logic(IClientHandler):
             #logging.info(self.G.nodes.data('distance'))
             #logging.info(self.G.nodes.data('direction'))
             graphstr = str(self.G.nodes.data()).replace('::', '.')
-            #logging.info(graphstr)
+            logging.info(graphstr)
             logging.info("")
 
             self.buildTree()
             logging.info(self.tree)
             logging.info("")
 
-            move = self.treeToMove()
-            
-            
-            move2 = self.treeToMoveSpeed(self.position, self.direction,
-                                         self.game_state.current_ship.speed,
-                                         self.game_state.current_ship.coal,
-                                         1)
+            move2 = self.treeToMove()
         else:
 
             ## ToDo
@@ -445,14 +445,20 @@ class Logic(IClientHandler):
             ## stay on segment 8
             ## generate tree (as known) -> movetotree()
 
-            moves = self.game_state.possible_action_comb(self.game_state, [], 0, 2)
+            moves = []
+            depth = 2
+            while len(moves) == 0:
+                moves = self.game_state.possible_action_comb(self.game_state, [], 0, depth)
+                
+                depth += 1
+            
             print(moves)
-            move = Move(moves[0])
+            move2 = Move(moves[0])
 
 
         #self.treeToMoveSpeed(self.position, self.direction, self.game_state.current_ship.speed, self.game_state.current_ship.coal, 0)
 
-        return move
+        return move2
         return possible_moves[random.randint(0, len(possible_moves) - 1)]
 
     # this method is called every time the server has sent a new game state update
