@@ -45,9 +45,13 @@ class Logic(IClientHandler):
     graph: nx.DiGraph
     maxSegments: int
     tree: List[CubeDirection]
+    mustSpeedMap: List[int]
+    rotationMap: List[int]
+    positionMap: List[CubeCoordinates]
     directionVectors: List[CubeCoordinates]
     directions: List[CubeDirection]
     passengerNodes: List[List] # str, CubeCoordinates, bool
+
     
     def __init__(self):
         
@@ -57,8 +61,13 @@ class Logic(IClientHandler):
         self.totalTurns = 0
         self.totalAdv = 0
         self.tree: List[CubeDirection] = []
+        self.mustSpeedMap: List[int] = []
+        self.rotationMap: List[int] = []
+        self.positionMap: List[CubeCoordinates] = []
         self.idle = False
         self.passengerNodes = []
+        self.passengers = 0
+        self.depth = 5
         self.directionVectors = [
             CubeCoordinates(1, 0),  #-1     Right -> Clockwise
             CubeCoordinates(0, 1),  #-1
@@ -90,7 +99,7 @@ class Logic(IClientHandler):
                 if field_type == FieldType.Passenger:
                     passengerDirection = thisSegment.fields[i][u].passenger.direction
                     self.passengerNodes.append([node, cube, True])
-                self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, speed=None, stream=stream, segment=self.maxSegments - 1, direction=None)
+                self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, speed=0, stream=stream, segment=self.maxSegments - 1, direction=None)
                 #print(node)
 
 
@@ -103,7 +112,7 @@ class Logic(IClientHandler):
             if field_type == FieldType.Passenger:
                 passengerDirection = thisSegment.fields[i][2].passenger.direction
                 self.passengerNodes.append([node, cube, True])
-            self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, speed=None, stream=stream, segment=self.maxSegments - 1, direction=None)
+            self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, speed=0, stream=stream, segment=self.maxSegments - 1, direction=None)
             #print(node)
 
 
@@ -118,7 +127,7 @@ class Logic(IClientHandler):
                 if field_type == FieldType.Passenger:
                     passengerDirection = thisSegment.fields[i][3 + d].passenger.direction
                     self.passengerNodes.append([node, cube, True])
-                self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, speed=None, stream=stream, segment=self.maxSegments - 1, direction=None)
+                self.G.add_node(node, field_type=field_type, passengerDirection=passengerDirection, speed=0, stream=stream, segment=self.maxSegments - 1, direction=None)
                 #print(node)
 
             base = base.plus(thisSegment.direction.vector())
@@ -145,7 +154,7 @@ class Logic(IClientHandler):
 
         #print('--------\n\n')
             
-    def setDistances(self):
+    def setDistances(self, tries):
 
         # reset distances
         for n in self.G.nodes:
@@ -192,6 +201,60 @@ class Logic(IClientHandler):
             else:
                 pass
 
+        
+        # set docks in beginning to 0 (not working as great as expected)
+        '''
+        if self.passengers < 2 and tries == 0:
+            print(self.passengerNodes)
+
+            for p in self.passengerNodes:
+                if p[2] == True:
+
+                    dock: CubeCoordinates = p[1].plus(self.G.nodes[p[0]]['passengerDirection'].vector())
+                    dockNode: str = ';'.join(str(x) for x in dock.coordinates())
+
+                    if self.G.nodes[dockNode]['field_type'] != FieldType.Water and self.G.nodes[dockNode]['field_type'] != FieldType.Goal:
+                        continue
+
+                    self.G.nodes[dockNode]['distance'] = 0
+
+                    isLastSegment = self.maxSegments - 1 == self.G.nodes[dockNode]['segment']
+                    if isLastSegment == True:
+                        nextSegmentDirection: CubeDirection = self.game_state.board.next_direction
+                    else:
+                        nextSegmentDirection: CubeDirection = self.game_state.board.segments[self.G.nodes[dockNode]['segment'] + 1].direction
+
+                    dockDirection = nextSegmentDirection
+
+                    cycleDirection = nextSegmentDirection.turn_count_to(dockDirection) # -1,0,1
+                    if cycleDirection == 0:
+                        cycleDirection = 1
+
+                    newDockDirection = None
+                    bestTurnDistance = 999
+                    v = self.directions.index(dockDirection)
+                    for i in range(6):
+                        # check if possible
+                        nextToDock: CubeCoordinates = dock.plus(self.directions[v].vector())
+                        nTDNode: str = ';'.join(str(x) for x in nextToDock.coordinates())
+                        try:
+                            if self.G.nodes[nTDNode]['field_type'] == FieldType.Water or self.G.nodes[nTDNode]['field_type'] == FieldType.Goal:
+                                if self.directions[v].turn_count_to(dockDirection) < bestTurnDistance:
+                                    newDockDirection = self.directions[v]
+                                    bestTurnDistance = self.directions[v].turn_count_to(dockDirection)
+                        except:
+                            pass
+
+                        v += cycleDirection
+                        if v > 5:
+                            v = 0
+                        if v < 0:
+                            v = 5
+                    
+                    self.G.nodes[dockNode]['direction'] = newDockDirection
+                    print(dockDirection, newDockDirection, cycleDirection, dockNode)'''
+
+
         # dijkstra relaxing stuff
         while len(unvisited) > 0:
             #print(unvisited)
@@ -229,21 +292,25 @@ class Logic(IClientHandler):
 
                         flow = v.opposite()
 
+                        # setting docks while dijkstra to 0 -> works better, but dijkstra is broke because negative weight
+                        # not a huge problem :)
                         dockMulti = 1
-                        if self.game_state.current_ship.passengers < 2: # if need for passengers
+                        if self.passengers < 2 and tries == 0: # if need for passengers
                             if self.G.nodes[neighborNode]['dock'] == True:
-                                dockMulti = 0.45
+                                dockMulti = 0
 
                         newWeight = math.floor((self.G.nodes[smallestNode]['distance'] + 1) * (abs(flow.turn_count_to(self.G.nodes[smallestNode]['direction'])) + 1) * dockMulti)
 
-                        if newWeight < 1:
-                            newWeight = 1
+                        #if newWeight == 0:
+                            #newWeight = 0.1
 
                         if self.G.nodes[neighborNode]['distance'] > newWeight:
                             #print("relaxed to", self.G.nodes[smallestNode]['distance'] + 1)
                             self.G.nodes[neighborNode]['distance'] = newWeight
                             self.G.nodes[neighborNode]['direction'] = flow
 
+
+                        # neighbors unvisted machen wenn
 
                 except:
                     #print("out of bounds")
@@ -261,12 +328,17 @@ class Logic(IClientHandler):
                 dock = p[1].plus(self.G.nodes[p[0]]['passengerDirection'].vector())
                 dockNode = ';'.join(str(x) for x in dock.coordinates())
                 self.G.nodes[dockNode]['dock'] = False
+                self.G.nodes[dockNode]['speed'] = 0
                 self.G.nodes[p[0]]['passengerDirection'] = None
                 p[2] = False
 
     def buildTree(self):
         
         self.tree = []
+        self.mustSpeedMap = []
+        self.rotationMap = []
+        self.positionMap = []
+
         lastCube = self.position
         globalbestNode = ';'.join(str(x) for x in self.position.coordinates())
         globalbestDistance = 999999999999
@@ -280,8 +352,15 @@ class Logic(IClientHandler):
                 globalbestNode = ';'.join(str(x) for x in lastCube.coordinates())
                 globalbestDistance = self.G.nodes[globalbestNode]['distance']
                 self.tree.append(nodeDirection)
+                self.mustSpeedMap.append(self.G.nodes[globalbestNode]['speed'])
+                self.positionMap.append(lastCube)
             except:
                 break
+        
+        direction = self.direction
+        for t in self.tree:
+            self.rotationMap.append(abs(direction.turn_count_to(t)))
+            direction = t
 
     def treeToMove(self) -> Move:
         acceleration = 0
@@ -307,7 +386,7 @@ class Logic(IClientHandler):
 
         if acceleration != 0:
             actions.append(Accelerate(acceleration))
-####HELPHELPHELP BUGGYY???
+            
         if self.direction != self.tree[0]:
             actions.append(Turn(self.tree[0]))
             self.totalTurns += 1
@@ -337,43 +416,276 @@ class Logic(IClientHandler):
 
         return Move(actions=actions)
     
-    def treeToMoveSpeed(self, position: CubeCoordinates, direction: CubeDirection, speed: int, coal: int, maxCoal: int):
+    def evalSpeed(self, distanceLeft, coal, speed, mustSpeed, depth, playerSegment):
+
+        turn = self.game_state.turn + (depth * 2)
+        coalLoss = self.game_state.current_ship.coal - coal
+
+        score = 0 # möglichst groß
+
+        print(mustSpeed, speed)
+        if mustSpeed == speed:
+            score = (self.depth - depth) * 200
+        else:
+            score += (self.depth - depth) * speed * 4
+
+            if mustSpeed != 0:
+                score = 0
+
+        score -= (self.depth - depth) * (coalLoss ** 3) * 10
+
+        #score -= (depth ** 2) * 5
+
+        #score -= max(0, 30 - turn) * (3 - depth) * (coalLoss ** 2) * 3
+
+        #if playerSegment == self.maxSegments - 1 and distanceLeft - speed < 0:
+            #score = 0
+
+        score = math.ceil(score)
+
+        return score
     
+    def treeToMoveSpeed(
+            self,
+            position: CubeCoordinates,
+            direction: CubeDirection,
+            speed: int,
+            coal: int,
+            depth: int,
+            tree: List[CubeDirection],
+            mustSpeedMap: List[int],
+            rotationMap: List[int],
+            positionMap: List[CubeCoordinates]
+        ):
+        
         minSpeed = 1
         maxSpeed = 4
-        
-        maxCoal = min(maxCoal, coal)
-        
-        possibleSpeeds = [speed]
-        
-        for c in range(maxCoal + 1):
+
+        if depth > self.depth or len(tree) == 0:
+            node = ';'.join(str(x) for x in position.coordinates())
+            mustSpeed = self.G.nodes[node]['speed']
+            score = self.evalSpeed(len(tree), coal, speed, mustSpeed, depth, self.game_state.board.segment_index(position))
+            print('exit1', depth, len(tree), score)
+            return score
+
+        print('\n\n new depth')
+        print('parms', position, direction, speed, coal, depth)
+
+        print('tree', tree)
+        print('mustSpeedMap', mustSpeedMap)
+        print('rotationMap', rotationMap)
+        print('positionMap', positionMap)
+
+        speedMap = []
+        speedMapSum = []
+
+        # generate speed maps
+        pos = position
+        lastDirection = direction
+        newStream = True
+        for t in tree:
+            speedMap.append(1)
+
+            pos = pos.plus(t.vector())
+            node = ';'.join(str(x) for x in pos.coordinates())
+
+            try:
+                test = self.G.nodes[node]['stream']
+            except:
+                continue
+
+            # if this field is new Stream (set newStream for next field)
+            # if now not on stream -> if next field stream it is 100% newStream
+            if self.G.nodes[node]['stream'] == False:
+                newStream = True
             
-            newHigh = speed + (c + 1)
-            if newHigh <= maxSpeed:
-                possibleSpeeds.append(newHigh)
-                
-            newLow = speed - (c + 1)
-            if newLow >= minSpeed:
-                possibleSpeeds.append(newLow)
+            # if on stream and direction change -> counts as new stream
+            if self.G.nodes[node]['stream'] == True and lastDirection != t:
+                newStream = True
+
+
+            # if on newStream
+            if self.G.nodes[node]['stream'] == True and newStream == True:
+                newStream = False
+                speedMap[-1] += 1
+
+            other = ';'.join(str(x) for x in self.game_state.other_ship.position.coordinates())
+            if other == node:
+                speedMap[-1] += 1
+
+            lastDirection = t
+
+            if len(speedMapSum) == 0:
+                lastOfTree = 0
+            else:
+                lastOfTree = speedMapSum[-1]
+
+            speedMapSum.append(lastOfTree + speedMap[-1])
         
-        # for each of the speeds
+        print('speedMap', speedMap)
+        print('speedMapSum', speedMapSum)
+
+        # select possible speeds
+        possibleSpeeds: List[List] = []
+        index = 0
+        for s in range(minSpeed, maxSpeed + 1):
+
+            if s in speedMapSum:
+                possibleSpeeds.append([s, index])
+                index += 1
+
+        # calc coal
+        newPossibleSpeeds = [] # speed, index in sumMap, coal, score
         for p in possibleSpeeds:
-            print(p)
-            turns = 0
+            accCoal = max(0, abs(speed - p[0]) - 1)
+            rotationCoal = -1
+            for i, r in enumerate(rotationMap):
+                if i > p[1]:
+                    break
+                rotationCoal += r
+
+            rotationCoal = max(0, rotationCoal)
+
+            totalCoal = accCoal + rotationCoal
+            p.append(totalCoal)
+
+            # only select valid coal
+            if coal - totalCoal >= 0:
+                newPossibleSpeeds.append(p)
+        
+        print('possSpeeds', possibleSpeeds)
+        print('newPossSpeeds', newPossibleSpeeds)
+
+        if len(newPossibleSpeeds) == 0:
+            if depth > 0:
+                node = ';'.join(str(x) for x in position.coordinates())
+                mustSpeed = self.G.nodes[node]['speed']
+                score = self.evalSpeed(len(tree), coal, speed, mustSpeed, depth, self.game_state.board.segment_index(position))
+                print('exit2', depth, len(tree), score)
+                return score
+            else:
+                return None
+        
+        
+        
+        node = ';'.join(str(x) for x in position.coordinates())
+        mustSpeed = self.G.nodes[node]['speed']
+        score = self.evalSpeed(len(tree), coal, speed, mustSpeed, depth, self.game_state.board.segment_index(position))
+
+        for n in newPossibleSpeeds:
+            subStart = n[1]
+            print('substart', subStart, 'at depth', depth)
+            n.append(self.treeToMoveSpeed(
+                positionMap[subStart],
+                tree[subStart],
+                n[0],
+                coal - n[2],
+                depth+1,
+                tree[subStart + 1:].copy(),
+                mustSpeedMap[subStart + 1:].copy(),
+                rotationMap[subStart + 1:].copy(),
+                positionMap[subStart + 1:].copy(),
+            ) + score)
+
+        print('newPossSpeeds', newPossibleSpeeds, 'at depth', depth)
+
+        bestScore = -99999
+        bestSpeed = None
+        for n in newPossibleSpeeds:
+            if n[3] >= bestScore:
+                bestScore = n[3]
+                bestSpeed = n.copy()
+
+        if depth > 0:
+            return bestScore
+        else:
+            print('bestspeed', bestSpeed)
+
+
+
+        actions = []
+        acc = bestSpeed[0] - speed
+        if acc != 0:
+            actions.append(Accelerate(acc))
+
+        # advance one
+        newPosition = position
+        newDirection = direction
+        for i in range(bestSpeed[1] + 1):
+            newPosition = newPosition.plus(tree[i].vector())
+
+            push = False
+            my = ';'.join(str(x) for x in newPosition.coordinates())
+            other = ';'.join(str(x) for x in self.game_state.other_ship.position.coordinates())
+            if my == other:
+                push = True
+
+            if newDirection != tree[i]:
+                actions.append(Turn(tree[i]))
+                self.totalTurns += 1
+
+            actions.append(Advance(1))
+
+            # push to highest weight field lol
+            if push:
+                positionsOnPath = [';'.join(str(x) for x in position.coordinates())]
+                for p in positionMap[:bestSpeed[1]]:
+                    positionsOnPath.append(';'.join(str(x) for x in p.coordinates()))
+
+                print(position, speed)
+                print(positionMap, bestSpeed[1], positionsOnPath)
+
+                worstDistance = -999 # highest weight => push enemy to that field
+                worstDirection = None
+                notAllowed = []
+                for v in range(6):
+                    print('notallowed', notAllowed)
+
+                    if v in notAllowed:
+                        continue
+                    
+                    pushother = ';'.join(str(x) for x in self.game_state.other_ship.position.plus(self.directionVectors[v]).coordinates())
+
+                    for p in positionsOnPath:
+                        if pushother == p:
+                            notAllowed.append(v)
+
+                            if worstDirection == self.directions[v]:
+                                worstDistance = -999
+                                worstDirection = None
+
+                            break
+
+                        try:
+                            if self.G.nodes[pushother]['field_type'] == FieldType.Water or self.G.nodes[pushother]['field_type'] == FieldType.Goal:
+                                if self.G.nodes[pushother]['distance'] > worstDistance:
+                                    worstDistance = self.G.nodes[pushother]['distance']
+                                    worstDirection = self.directions[v]
+                        except:
+                            pass
+
+                actions.append(Push(worstDirection))
+
+            newDirection = tree[i]
             
-            # for each step in speed
-            for s in range(p):
-                # check if stream or push
-                # (check if) turn
-                # 
-                
-                pass
+            # if passenger
+            if self.G.nodes[my]['dock'] == True:
+                if self.G.nodes[my]['speed'] == bestSpeed[0]:
+                    self.passengers += 1
+
+        return Move(actions=actions)
 
     def hashCube(self, position: CubeCoordinates) -> str:
         pass
 
     def unhashCube(self, position: str) -> CubeCoordinates:
         pass
+
+    def randomMove(self) -> Move:
+
+        possible_moves: List[Move] = self.game_state.possible_moves()
+        return possible_moves[random.randint(0, len(possible_moves) - 1)]
+
 
     # this method is called every time the server is requesting a new move
     # this method should always be implemented otherwise the client will be disqualified
@@ -401,35 +713,54 @@ class Logic(IClientHandler):
             self.add_nodes(thisSegment)
 
         
-        #if self.playerSegmentIndex == 7 and self.game_state.current_ship.passengers < 2 and self.idle == False:
-        #    self.idle = True
-
-        if self.maxSegments == 8 and len(self.tree) <= 4 and self.idle == False:
+        if self.playerSegmentIndex >= 6 and self.passengers < 2 and self.idle == False:
             self.idle = True
+
+        #if self.maxSegments == 8 and len(self.tree) <= 4 and self.idle == False:
+        #    self.idle = True
 
         if self.idle == False:
             print('goal')
         else:
             print('idle')
 
-        print(self.game_state.current_ship.passengers, 'passengers')
 
         self.updatePassAndDocks()
 
+        move2 = None
+        tries = 0
         if (self.idle == False or True):
-            self.setDistances()
+            while move2 == None:
+                self.setDistances(tries)
 
-            #logging.info(self.G.nodes.data('distance'))
-            #logging.info(self.G.nodes.data('direction'))
-            graphstr = str(self.G.nodes.data()).replace('::', '.')
-            logging.info(graphstr)
-            logging.info("")
+                #logging.info(self.G.nodes.data('distance'))
+                #logging.info(self.G.nodes.data('direction'))
+                graphstr = str(self.G.nodes.data()).replace('::', '.')
+                logging.info(graphstr)
+                logging.info("")
 
-            self.buildTree()
-            logging.info(self.tree)
-            logging.info("")
+                self.buildTree()
+                logging.info(self.tree)
+                logging.info("")
 
-            move2 = self.treeToMove()
+                move1 = self.treeToMove()
+
+                move2 = self.treeToMoveSpeed(
+                    self.position,
+                    self.direction,
+                    self.game_state.current_ship.speed,
+                    self.game_state.current_ship.coal,
+                    0,
+                    self.tree.copy(),
+                    self.mustSpeedMap.copy(),
+                    self.rotationMap.copy(),
+                    self.positionMap.copy()
+                )
+
+                if tries >= 3:
+                    return self.randomMove()
+
+                tries += 1
         else:
 
             ## ToDo
@@ -457,6 +788,9 @@ class Logic(IClientHandler):
 
 
         #self.treeToMoveSpeed(self.position, self.direction, self.game_state.current_ship.speed, self.game_state.current_ship.coal, 0)
+
+        print(self.game_state.current_ship.passengers, 'passengers')
+        print(self.passengers, 'passengers')
 
         return move2
         return possible_moves[random.randint(0, len(possible_moves) - 1)]
