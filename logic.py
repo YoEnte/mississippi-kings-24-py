@@ -444,6 +444,10 @@ class Logic(IClientHandler):
         score = math.ceil(score)
 
         return score
+
+        # Tim hat eine Idee:
+        # Spots, die man Speed (mit Kohle +-1 prunen) erreichen kann
+        # Evaluaten lol -> Kohle und so wie vorher einbeziehen
     
     def treeToMoveSpeed(
             self,
