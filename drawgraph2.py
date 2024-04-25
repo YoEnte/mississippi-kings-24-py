@@ -56,7 +56,11 @@ def draw(G: nx.DiGraph):
         cube = CubeCoordinates(int(coords3[0]), int(coords3[1]))
 
         if G.nodes[n]['fieldType'] == FieldType.Water:
-            colors.append(["blue"])
+            if not G.nodes[n]['hasStream']:
+                colors.append(["blue"])
+            else:
+                colors.append(["lightseagreen"])
+
         elif G.nodes[n]['fieldType'] == FieldType.Goal:
             colors.append(["gold"])
         elif G.nodes[n]['fieldType'] == FieldType.Island:
@@ -70,7 +74,7 @@ def draw(G: nx.DiGraph):
         hcoord.append(2. * np.sin(np.radians(60)) * (q-s) /3.)
         vcoord.append(r)
 
-    fig, ax = plt.subplots(1)
+    fig, ax = plt.subplots(dpi=70)
     ax.set_aspect('equal')
 
     for x, y, c, n in zip(hcoord, vcoord, colors, G.nodes.data()):
@@ -85,14 +89,22 @@ def draw(G: nx.DiGraph):
                             orientation=np.radians(0), 
                             facecolor=color, alpha=alpha, edgecolor='k')
         ax.add_patch(hex)
-        
-        if nodeData['nextDirection'] != None: # direction
-            ax.text(x, y, '--->', ha='center', va='center', size=12, rotation = (6 - directionList.index(nodeData['nextDirection'])) * 60, color='indigo')
+
+        starts = ['next', 'start', 'me']
+        counter = 0 # distances
+        for s in starts:
+            counter += 1
+
+            spaces = ' '
+            for i in range(counter * 5):
+                spaces += ' '
+
+            if nodeData['meDirection'] != None: # direction
+                ax.text(x, y, spaces + '>', ha='center', va='center', size=10, rotation = (6 - directionList.index(nodeData[s + 'Direction'])) * 60, color='indigo')
 
         ax.text(x, y-0.3, node, ha='center', va='center', size=7) # coord
 
-        starts = ['next', 'start', 'me'] # distances
-        counter = 0
+        counter = 0 # distances
         for s in starts:
             counter += 1
 
@@ -100,7 +112,7 @@ def draw(G: nx.DiGraph):
             if d >= 999999999999:
                 d = 'inf'
             
-            ax.text(x, y + counter / 8, s[0:3] + ' ' + str(d), ha='center', va='center', size=9)
+            ax.text(x, y + counter / 7, s[0] + ' ' + str(d), ha='center', va='center', size=7)
 
     # Also add scatter points in hexagon centres
     ax.scatter(hcoord, vcoord, c=[c[0] for c in colors], alpha=0.5)
