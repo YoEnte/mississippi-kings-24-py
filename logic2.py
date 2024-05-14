@@ -41,6 +41,13 @@ import math
 ## step     -> single steps needed
 ## distance -> dtistance (can have evals etc)
 
+## ToDo List:
+## Read from graph.txt
+## Autoread from graph.txt
+## start both scripts at same time
+## delay logic2
+## finish redoing
+
 class Logic(IClientHandler):
     game_state: GameState
 
@@ -67,6 +74,8 @@ class Logic(IClientHandler):
             CubeCoordinates(0, -1), #1
             CubeCoordinates(1, -1)  #0
         ]
+
+        open('graph.txt', 'w').close()
 
     def buildGraph(self, segmentIndex):
         segment = self.game_state.board.segments[segmentIndex]
@@ -221,13 +230,20 @@ class Logic(IClientHandler):
         possible_moves: List[Move] = self.game_state.possible_moves()
         return possible_moves[random.randint(0, len(possible_moves) - 1)]
 
-    def printGraph(self, useLogging):
+    def printGraph(self, console, useLogging, writeFile):
         graphstr = str(self.G.nodes.data()).replace('::', '.')
 
-        if useLogging:
-            logging.info(graphstr)
-        else:
-            print(graphstr)
+        if console:
+            if useLogging:
+                logging.info(graphstr)
+            else:
+                print(graphstr)
+
+        if writeFile:
+            with open("graph.txt", "a") as file:
+                file.writelines(["turn: ", str(self.game_state.turn), "\n"])
+                file.write(graphstr)
+                file.write("\n\n")
 
     def calculate_move(self) -> Move:
         # basic stuff
@@ -249,7 +265,7 @@ class Logic(IClientHandler):
 
         self.setDistances(self.setStarts())
 
-        self.printGraph(True)
+        self.printGraph(console=False, useLogging=True, writeFile=True)
 
         # send move        
         #move = self.randomMove()
