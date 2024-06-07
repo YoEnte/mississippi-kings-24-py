@@ -805,7 +805,7 @@ class Logic(IClientHandler):
         if move3 == None:
             move3 = self.randomMove()
 
-        self.printGraph(console=True, useLogging=True, sendToServer=False)
+        self.printGraph(console=True, useLogging=False, sendToServer=False)
         print('p', self.passengers)
 
         #self.countPassengers()
