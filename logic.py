@@ -328,7 +328,7 @@ class Logic(IClientHandler):
                 dock = p[1].plus(self.G.nodes[p[0]]['passengerDirection'].vector())
                 dockNode = ';'.join(str(x) for x in dock.coordinates())
                 self.G.nodes[dockNode]['dock'] = False
-                self.G.nodes[dockNode]['speed'] = 0
+                self.G.nodes[dockNode]['speed'] = 0 # should only be when not goal
                 self.G.nodes[p[0]]['passengerDirection'] = None
                 p[2] = False
 
@@ -744,13 +744,13 @@ class Logic(IClientHandler):
 
                 #logging.info(self.G.nodes.data('distance'))
                 #logging.info(self.G.nodes.data('direction'))
-                graphstr = str(self.G.nodes.data()).replace('::', '.')
-                logging.info(graphstr)
-                logging.info("")
+                #graphstr = str(self.G.nodes.data()).replace('::', '.')
+                #logging.info(graphstr)
+                #logging.info("")
 
                 self.buildTree()
-                logging.info(self.tree)
-                logging.info("")
+                #logging.info(self.tree)
+                #logging.info("")
 
                 move1 = self.treeToMove()
 
