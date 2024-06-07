@@ -33,7 +33,7 @@ from socha.starter import Starter
 import networkx as nx
 import math
 import json
-import socket
+#import socket
 from datetime import datetime
 
 ## fields   -> SoCha Fields
@@ -499,7 +499,6 @@ class Logic(IClientHandler):
             if self.G.nodes[node]['hasStream'] == True and lastDirection != d:
                 newStream = True
 
-
             # if on newStream
             if self.G.nodes[node]['hasStream'] == True and newStream == True:
                 newStream = False
@@ -756,8 +755,8 @@ class Logic(IClientHandler):
 
         turnBytes = str.encode(self.turnString)
         server = (host, port)
-        UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
-        UDPClientSocket.sendto(turnBytes, server)
+        #UDPClientSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+        #UDPClientSocket.sendto(turnBytes, server)
 
     def calculate_move(self) -> Move:
         # basic stuff
@@ -797,7 +796,7 @@ class Logic(IClientHandler):
                 self.cubeMap,
                 self.rotationCountMap,
                 self.mustSpeedMap,
-                False
+                True
             )
 
             if move3 != None:
@@ -806,7 +805,7 @@ class Logic(IClientHandler):
         if move3 == None:
             move3 = self.randomMove()
 
-        self.printGraph(console=False, useLogging=False, sendToServer=True)
+        self.printGraph(console=True, useLogging=True, sendToServer=False)
         print('p', self.passengers)
 
         #self.countPassengers()
