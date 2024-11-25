@@ -6,7 +6,8 @@ Today (22.11.2024), around 5 months after the Finals I set this repo to public.
 Additionally, I had a local webserver running, where the logic2.py connected via UDP and send calculated match data to.
 It had a webinterface where I watched my selfmade game replays, which were packed with field and debug infos, with which the bot chose it's move.
 I created that application because my own map data per turn was multiple kilobytes in size and not practical to read in terminal.
-I'll publish that code soon in another repo, because it was only developed locally on the server.
+
+Code is available for the public in this [repo](https://github.com/YoEnte/mississippi-kings-24-replayserver).
 
 ~ quack
 
